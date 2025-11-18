@@ -6,7 +6,7 @@ from datetime import datetime
 import io
 
 # ===========================
-# LISTA DE EXAMES LABORATORIAIS
+# LISTAS DE EXAMES
 # ===========================
 exames_lab = [
     "Hemograma Completo",
@@ -26,9 +26,6 @@ exames_lab = [
     "PCR de alta sensibilidade"
 ]
 
-# ===========================
-# EXAMES DE IMAGEM
-# ===========================
 exames_imagem = [
     "Teste Ergométrico",
     "RX de tórax em PA e Perfil",
@@ -87,7 +84,7 @@ def criar_receituario(paciente, cid, justificativa, lista_exames, titulo):
         linha = doc.add_paragraph(f"• {ex}")
         linha.runs[0].font.size = Pt(12)
 
-    # JUSTIFICATIVA – duas linhas acima do CID
+    # Justificativa – duas linhas acima do CID
     if justificativa.strip():
         doc.add_paragraph("\n")
         j = doc.add_paragraph(f"Justificativa: {justificativa}")
@@ -138,38 +135,62 @@ paciente = st.text_input("Nome completo do paciente")
 cid = st.text_input("CID (ex: I-10, I-25.1)")
 justificativa = st.text_area("Justificativa (opcional)")
 
-st.markdown("### 🧪 Selecione os exames laboratoriais")
-selecionados_lab = st.multiselect("Exames laboratoriais", exames_lab)
+# ======================================
+# CHECKBOXES EM DUAS COLUNAS – LABORATORIAIS
+# ======================================
+st.markdown("### 🧪 Exames Laboratoriais")
 
-st.markdown("### 🩻 Selecione os exames de imagem / complementares")
-selecionados_img = st.multiselect("Exames de imagem / complementares", exames_imagem)
+cols_lab = st.columns(2)
+lab_selecionados = []
 
+for i, exame in enumerate(exames_lab):
+    coluna = cols_lab[i % 2]
+    if coluna.checkbox(exame):
+        lab_selecionados.append(exame)
+
+# ======================================
+# CHECKBOXES EM DUAS COLUNAS – IMAGEM
+# ======================================
+st.markdown("### 🩻 Exames de Imagem / Complementares")
+
+cols_img = st.columns(2)
+img_selecionados = []
+
+for i, exame in enumerate(exames_imagem):
+    coluna = cols_img[i % 2]
+    if coluna.checkbox(exame):
+        img_selecionados.append(exame)
+
+# ======================================
+# BOTÃO PARA GERAR OS ARQUIVOS
+# ======================================
 if st.button("Gerar Solicitações"):
     if paciente.strip() == "" or cid.strip() == "":
         st.error("Preencha nome e CID.")
     else:
-        # Arquivo de laboratório
-        if selecionados_lab:
+
+        # Laboratoriais
+        if lab_selecionados:
             doc_lab = criar_receituario(
-                paciente, cid, justificativa, selecionados_lab,
+                paciente, cid, justificativa, lab_selecionados,
                 "SOLICITAÇÃO DE EXAMES LABORATORIAIS"
             )
             st.download_button(
-                label="📥 Baixar Solicitação Laboratorial",
+                "📥 Baixar Solicitação Laboratorial",
                 data=doc_lab,
                 file_name="solicitacao_laboratorial.docx",
                 mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
             )
 
-        # Arquivos individuais de imagem
-        for exame in selecionados_img:
+        # Imagem – 1 arquivo por exame
+        for exame in img_selecionados:
             doc_img = criar_receituario(
                 paciente, cid, justificativa, [exame],
                 "SOLICITAÇÃO DE EXAME COMPLEMENTAR"
             )
-            filename = exame.replace(" ", "_").replace("/", "_").lower() + ".docx"
+            filename = exame.replace(" ", "_").lower() + ".docx"
             st.download_button(
-                label=f"📥 Solicitação – {exame}",
+                f"📥 Solicitação – {exame}",
                 data=doc_img,
                 file_name=filename,
                 mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
