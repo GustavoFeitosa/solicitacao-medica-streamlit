@@ -53,11 +53,7 @@ def criar_receituario(paciente, cid, justificativa, lista_exames, titulo):
 
     doc = Document()
 
-    # Cabeçalho
-    header = doc.add_paragraph()
-    header_run = header.add_run()
-    header_run.add_picture("assets/logo_zumtec.png", width=Pt(160))
-
+    # ---------- Cabeçalho ----------
     h = doc.add_paragraph("CONSULTÓRIO CARDIOLÓGICO")
     h.alignment = WD_ALIGN_PARAGRAPH.CENTER
     h.runs[0].bold = True
@@ -69,7 +65,7 @@ def criar_receituario(paciente, cid, justificativa, lista_exames, titulo):
 
     doc.add_paragraph("")
 
-    # Título
+    # ---------- Título ----------
     t = doc.add_paragraph(titulo)
     t.alignment = WD_ALIGN_PARAGRAPH.CENTER
     t.runs[0].bold = True
@@ -77,13 +73,13 @@ def criar_receituario(paciente, cid, justificativa, lista_exames, titulo):
 
     doc.add_paragraph("")
 
-    # Paciente
+    # ---------- Paciente ----------
     p = doc.add_paragraph(f"Para Sr(a). {paciente}")
     p.runs[0].font.size = Pt(12)
 
+    # ---------- Exames ----------
     doc.add_paragraph("Solicito:\n").runs[0].font.size = Pt(12)
 
-    # Lista de exames
     for ex in lista_exames:
         linha = doc.add_paragraph(f"• {ex}")
         linha.runs[0].font.size = Pt(12)
@@ -99,12 +95,12 @@ def criar_receituario(paciente, cid, justificativa, lista_exames, titulo):
     cid_par = doc.add_paragraph(f"CID 10: {cid}")
     cid_par.runs[0].font.size = Pt(12)
 
-    # Data
+    # ---------- Data ----------
     data = datetime.now().strftime("%d/%m/%Y")
     d = doc.add_paragraph(f"\nSalvador/BA, {data}")
     d.runs[0].font.size = Pt(12)
 
-    # Assinatura
+    # ---------- Assinatura ----------
     assinatura = doc.add_paragraph("\n_______________________________")
     assinatura.runs[0].font.size = Pt(12)
 
@@ -113,11 +109,34 @@ def criar_receituario(paciente, cid, justificativa, lista_exames, titulo):
     )
     info.runs[0].font.size = Pt(11)
 
-    # Rodapé com logos
-    footer = doc.add_paragraph()
-    run = footer.add_run()
-    run.add_picture("assets/logo_hcp.png", width=Pt(60))
-    run.add_picture("assets/logo_ha.png", width=Pt(60))
+    doc.add_paragraph("")
+
+    # ---------- Rodapé ----------
+    rod1 = doc.add_paragraph(
+        "Centro Médico Aliança, sala 211: Av. Juracy Magalhães Júnior, 2096 –\n"
+        "Rio Vermelho, Salvador - BA, 41920-180\n"
+        "Tel: 71 21084686"
+    )
+    rod1.runs[0].font.size = Pt(10)
+
+    # Logo HA
+    ha_paragraph = doc.add_paragraph()
+    ha_paragraph.alignment = WD_ALIGN_PARAGRAPH.LEFT
+    ha_paragraph.add_run().add_picture("assets/logo_ha.png", width=Pt(65))
+
+    doc.add_paragraph("")  # Espaço
+
+    rod2 = doc.add_paragraph(
+        "Centro Médico Cárdio Pulmonar, sala 501: Rua Ponciano Oliveira, 157 – Rio Vermelho,\n"
+        "Salvador – BA, 41920-275\n"
+        "Tel: 71 30344598 / 71 30344599"
+    )
+    rod2.runs[0].font.size = Pt(10)
+
+    # Logo HCP (selo dourado + azul juntos)
+    hcp_paragraph = doc.add_paragraph()
+    hcp_paragraph.alignment = WD_ALIGN_PARAGRAPH.LEFT
+    hcp_paragraph.add_run().add_picture("assets/logo_hcp.png", width=Pt(110))
 
     buffer = io.BytesIO()
     doc.save(buffer)
@@ -127,6 +146,7 @@ def criar_receituario(paciente, cid, justificativa, lista_exames, titulo):
 # ===========================
 # INTERFACE STREAMLIT
 # ===========================
+
 st.image("assets/logo_zumtec.png", width=260)
 st.markdown("### 📄 Gerador de Solicitações Médicas – Dr. Gustavo Feitosa")
 st.markdown("---")
@@ -135,30 +155,55 @@ paciente = st.text_input("Nome completo do paciente")
 cid = st.text_input("CID (ex: I-10, I-25.1)")
 justificativa = st.text_area("Justificativa (opcional)")
 
-# CHECKBOXES EM DUAS COLUNAS – LABORATORIAIS
+# ===========================
+# LABORATORIAIS – MARCAR TODOS
+# ===========================
 st.markdown("### 🧪 Exames Laboratoriais")
+
+select_all_lab = st.checkbox("Selecionar todos os exames laboratoriais")
+
 cols_lab = st.columns(2)
 lab_selecionados = []
+
 for i, exame in enumerate(exames_lab):
     col = cols_lab[i % 2]
-    if col.checkbox(exame):
+    marcado = col.checkbox(exame, value=select_all_lab)
+    if marcado:
         lab_selecionados.append(exame)
 
-# CHECKBOXES EM DUAS COLUNAS – IMAGEM
+# Campo livre extra
+extra_lab = st.text_area("Exames laboratoriais adicionais (digite um por linha)")
+if extra_lab.strip():
+    extras = [x.strip() for x in extra_lab.split("\n") if x.strip()]
+    lab_selecionados.extend(extras)
+
+# ===========================
+# IMAGEM – COM CAMPO LIVRE
+# ===========================
 st.markdown("### 🩻 Exames de Imagem / Complementares")
+
 cols_img = st.columns(2)
 img_selecionados = []
+
 for i, exame in enumerate(exames_imagem):
     col = cols_img[i % 2]
     if col.checkbox(exame):
         img_selecionados.append(exame)
 
+extra_img = st.text_area("Exames de imagem/complementares adicionais (um por linha)")
+if extra_img.strip():
+    extras = [x.strip() for x in extra_img.split("\n") if x.strip()]
+    img_selecionados.extend(extras)
+
+# ===========================
 # BOTÃO
+# ===========================
 if st.button("Gerar Solicitações"):
     if paciente.strip() == "" or cid.strip() == "":
         st.error("Preencha nome e CID.")
     else:
-        # Laboratoriais
+
+        # ---- Laboratoriais ----
         if lab_selecionados:
             doc_lab = criar_receituario(
                 paciente, cid, justificativa, lab_selecionados,
@@ -171,7 +216,7 @@ if st.button("Gerar Solicitações"):
                 mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document"
             )
 
-        # Imagem – 1 arquivo por exame
+        # ---- Exames de imagem – 1 arquivo por exame ----
         for exame in img_selecionados:
             doc_img = criar_receituario(
                 paciente, cid, justificativa, [exame],
