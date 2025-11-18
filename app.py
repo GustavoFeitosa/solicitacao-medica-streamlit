@@ -54,6 +54,10 @@ def criar_receituario(paciente, cid, justificativa, lista_exames, titulo):
     doc = Document()
 
     # Cabeçalho
+    header = doc.add_paragraph()
+    header_run = header.add_run()
+    header_run.add_picture("assets/logo_zumtec.png", width=Pt(160))
+
     h = doc.add_paragraph("CONSULTÓRIO CARDIOLÓGICO")
     h.alignment = WD_ALIGN_PARAGRAPH.CENTER
     h.runs[0].bold = True
@@ -109,15 +113,11 @@ def criar_receituario(paciente, cid, justificativa, lista_exames, titulo):
     )
     info.runs[0].font.size = Pt(11)
 
-    end1 = doc.add_paragraph(
-        "Centro Médico Aliança, sala 211 – Av. Juracy Magalhães Júnior, 2096 – Salvador – BA"
-    )
-    end1.runs[0].font.size = Pt(10)
-
-    end2 = doc.add_paragraph(
-        "Centro Médico Cárdio Pulmonar, sala 501 – Rua Ponciano Oliveira, 157 – Salvador – BA"
-    )
-    end2.runs[0].font.size = Pt(10)
+    # Rodapé com logos
+    footer = doc.add_paragraph()
+    run = footer.add_run()
+    run.add_picture("assets/logo_hcp.png", width=Pt(60))
+    run.add_picture("assets/logo_ha.png", width=Pt(60))
 
     buffer = io.BytesIO()
     doc.save(buffer)
@@ -127,48 +127,37 @@ def criar_receituario(paciente, cid, justificativa, lista_exames, titulo):
 # ===========================
 # INTERFACE STREAMLIT
 # ===========================
-st.title("📄 Gerador de Solicitações Médicas – Dr. Gustavo Feitosa")
-
-st.markdown("### Preencha os dados abaixo:")
+st.image("assets/logo_zumtec.png", width=260)
+st.markdown("### 📄 Gerador de Solicitações Médicas – Dr. Gustavo Feitosa")
+st.markdown("---")
 
 paciente = st.text_input("Nome completo do paciente")
 cid = st.text_input("CID (ex: I-10, I-25.1)")
 justificativa = st.text_area("Justificativa (opcional)")
 
-# ======================================
 # CHECKBOXES EM DUAS COLUNAS – LABORATORIAIS
-# ======================================
 st.markdown("### 🧪 Exames Laboratoriais")
-
 cols_lab = st.columns(2)
 lab_selecionados = []
-
 for i, exame in enumerate(exames_lab):
-    coluna = cols_lab[i % 2]
-    if coluna.checkbox(exame):
+    col = cols_lab[i % 2]
+    if col.checkbox(exame):
         lab_selecionados.append(exame)
 
-# ======================================
 # CHECKBOXES EM DUAS COLUNAS – IMAGEM
-# ======================================
 st.markdown("### 🩻 Exames de Imagem / Complementares")
-
 cols_img = st.columns(2)
 img_selecionados = []
-
 for i, exame in enumerate(exames_imagem):
-    coluna = cols_img[i % 2]
-    if coluna.checkbox(exame):
+    col = cols_img[i % 2]
+    if col.checkbox(exame):
         img_selecionados.append(exame)
 
-# ======================================
-# BOTÃO PARA GERAR OS ARQUIVOS
-# ======================================
+# BOTÃO
 if st.button("Gerar Solicitações"):
     if paciente.strip() == "" or cid.strip() == "":
         st.error("Preencha nome e CID.")
     else:
-
         # Laboratoriais
         if lab_selecionados:
             doc_lab = criar_receituario(
